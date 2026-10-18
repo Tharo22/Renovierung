@@ -128,6 +128,26 @@ h2:first-child{margin-top:2px}
 .bar h1{letter-spacing:-.01em}
 .empty::before{content:'';display:block;width:60px;height:60px;margin:0 auto 12px;border-radius:15px;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.16%22/%3E%3Cstop offset=%221%22 stop-color=%22%23000%22 stop-opacity=%22.14%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%23A63D2F%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22url%28%23g%29%22/%3E%3Crect x=%2210%22 y=%2212%22 width=%2234%22 height=%2214%22 rx=%223.5%22 fill=%22%23fff%22/%3E%3Cpath d=%22M44 19h8v14H33v7%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/%3E%3Crect x=%2228%22 y=%2240%22 width=%2210%22 height=%2214%22 rx=%223%22 fill=%22%23fff%22/%3E%3C/svg%3E") center/cover;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 /*ENDBRAND*/
+/*VIZ*/
+:root{--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#008300;--c7:#6250d6;--c8:#e34948;--neutral:#8a857d}
+@media (prefers-color-scheme: dark){:root{--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--c8:#e66767;--neutral:#8f8a82}}
+.viz{padding:12px 12px 8px}
+.viz svg{display:block;width:100%;height:auto;overflow:visible}
+.viz text{font-family:var(--font-body);fill:var(--muted);font-size:11px}
+.viz .t-ink{fill:var(--ink)}
+.viz .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.vleg{display:flex;flex-direction:column}
+.vleg .r{display:grid;grid-template-columns:14px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);font-size:13.5px}
+.vleg .r i{width:10px;height:10px;border-radius:3px;display:block}
+.vleg .r b{font-family:var(--font-mono);font-weight:600}
+.vleg .r span.p{font-family:var(--font-mono);color:var(--muted);font-size:12px;min-width:38px;text-align:right}
+.vtip{position:fixed;z-index:30;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.35;max-width:220px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.vtip b{font-family:var(--font-mono)}
+details.vtab{margin:6px 14px 10px;font-size:12.5px;color:var(--muted)}
+details.vtab table{width:100%;border-collapse:collapse;margin-top:6px}
+details.vtab td,details.vtab th{padding:4px 2px;border-top:1px solid var(--line);text-align:right;font-family:var(--font-mono);font-size:12px}
+details.vtab td:first-child,details.vtab th:first-child{text-align:left;font-family:var(--font-body)}
+/*ENDVIZ*/
 </style>
 </head>
 <body>
@@ -199,6 +219,28 @@ function calc(p){
     modBase,perWe,vereinOk,umlJahr,capM,capJahr,umlEff,neuJahr,dMiete,nettoNach,bauKosten,bauZins,invest,darl,am,rendite,cfY1,pb,qm};
 }
 /*END*/
+
+
+/* ---------- Grafiken ---------- */
+const polar=(cx,cy,r,a)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+function arcPath(cx,cy,r,a0,a1){ const [x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1); return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; }
+function donut(items,centerTop,centerSub){
+  const tot=items.reduce((a,x)=>a+x.v,0); if(tot<=0) return '';
+  let a=-Math.PI/2, g='';
+  items.forEach((x,i)=>{ const da=x.v/tot*Math.PI*2; if(da<=0) return; const a1=a+da-(items.length>1?0.012:0); g+=`<path d="${arcPath(80,80,58,a,Math.max(a+0.01,a1))}" fill="none" stroke="var(--c${(i%8)+1})" stroke-width="22"><title>${esc(x.n)}: ${eur(x.v)} (${nf(x.v/tot*100,0)} %)</title></path>`; a+=da; });
+  return `<svg viewBox="0 0 160 160" role="img" aria-label="Kostenanteile: ${items.map(x=>esc(x.n)+' '+nf(x.v/tot*100,0)+' Prozent').join(', ')}" style="max-width:220px;margin:0 auto">${g}<text x="80" y="76" text-anchor="middle" class="t-ink num" style="font-size:17px;font-weight:600">${esc(centerTop)}</text><text x="80" y="94" text-anchor="middle" style="font-size:10.5px">${esc(centerSub)}</text></svg>`;
+}
+function limitBar(R){
+  const W=360, max=Math.max(R.counted,R.limit)*1.2||1, x=v=>8+(W-16)*Math.max(0,v)/max;
+  const st=R.ratio>1?'var(--bad)':R.ratio>0.8?'var(--mid)':'var(--good)';
+  const lx=x(R.limit), vx=x(R.counted), anchor=lx>W-90?'end':'middle';
+  return `<div class="viz"><svg viewBox="0 0 ${W} 92" role="img" aria-label="Gezählte Kosten ${eur(R.counted)} gegen die Grenze von ${eur(R.limit)}, ${nf(R.ratio*100,0)} Prozent ausgeschöpft">
+  <rect x="8" y="38" width="${W-16}" height="16" rx="4" fill="var(--surface2)"/>
+  <rect x="8" y="38" width="${Math.max(2,vx-8).toFixed(1)}" height="16" rx="4" fill="${st}"/>
+  <line x1="${lx.toFixed(1)}" x2="${lx.toFixed(1)}" y1="28" y2="64" stroke="var(--ink)" stroke-width="2"/>
+  <text x="${lx.toFixed(1)}" y="20" text-anchor="${anchor}" class="t-ink">Grenze 15 %: <tspan class="num" font-weight="600">${eur(R.limit)}</tspan></text>
+  <text x="${Math.min(vx,W-8).toFixed(1)}" y="${R.counted>R.limit?82:82}" text-anchor="${vx>W-110?'end':'start'}" class="t-ink">Gezählt: <tspan class="num" font-weight="600">${eur(R.counted)}</tspan> · ${nf(R.ratio*100,0)} %</text></svg></div>`;
+}
 
 /* =====================  ZUSTAND  ===================== */
 const KEY='renovierung-v1';
@@ -279,7 +321,7 @@ function viewSteuer(p){
   else if(!R.inWindow) txt='Das Bauende liegt mehr als drei Jahre nach dem Kauf. Die 15-%-Regel greift nicht.';
   else if(R.ratio>1) txt='Über der Grenze um '+eur(R.counted-R.limit)+'. Die Kosten gelten als anschaffungsnahe Herstellungskosten und müssen über die Abschreibung verteilt werden.';
   else txt='Noch '+eur(R.limit-R.counted)+' unter der Grenze ('+nf(R.ratio*100,0)+' % ausgeschöpft).';
-  h+=`<div class="card pad" style="margin-top:10px"><span class="pill ${rc}">${R.AK<=0?'offen':R.ratio>1?'über der Grenze':R.ratio>0.8?'knapp':'unter der Grenze'}</span><p style="margin:8px 0 0">${txt}</p><p class="note" style="margin:8px 0 0">Gezählt werden netto ${eur(R.counted)}: Instandhaltung, Schönheitsreparaturen, Modernisierung und energetische Maßnahmen. Erweiterungen und die Einbauküche zählen nicht mit.</p></div>`;
+  h+=`<div class="card" style="margin-top:10px">${R.AK>0?limitBar(R):''}<div class="pad"><span class="pill ${rc}">${R.AK<=0?'offen':R.ratio>1?'über der Grenze':R.ratio>0.8?'knapp':'unter der Grenze'}</span><p style="margin:8px 0 0">${txt}</p><p class="note" style="margin:8px 0 0">Gezählt werden netto ${eur(R.counted)}: Instandhaltung, Schönheitsreparaturen, Modernisierung und energetische Maßnahmen. Erweiterungen und die Einbauküche zählen nicht mit.</p></div></div>`;
   h+='<h2>Standard gehoben?</h2><div class="card">'+cb('sh.heiz','Heizung wurde auf ein höheres Niveau gebracht',p)+cb('sh.sanit','Sanitär wurde auf ein höheres Niveau gebracht',p)+cb('sh.elek','Elektro wurde auf ein höheres Niveau gebracht',p)+cb('sh.fenster','Fenster wurden auf ein höheres Niveau gebracht',p)+'</div>';
   h+=`<p class="note">Wenn mindestens drei der vier Bereiche hochwertiger werden (zum Beispiel neue Elektrik, Bäder, Fenster), spricht man von Standardhebung. Dann sind die Kosten Herstellungskosten, auch unter der 15-%-Grenze.${R.stdHebung?' <b>Hier ausgelöst.</b>':''}</p>`;
   h+='<h2>Behandlung der Kosten</h2><div class="card"><div class="fields">'+f('afa','Abschreibung Gebäude pro Jahr','%',{src:p})+f('grenz','Grenzsteuersatz','%',{src:p})+selF('wahl','Instandhaltung',[['sofort','sofort abziehen'],['verteilt','auf Jahre verteilen']],p)+f('verteil','Verteilung auf Jahre (2 bis 5)','',{src:p})+'</div></div>';
@@ -335,7 +377,8 @@ function viewErg(p){
   const mx=Math.max(...R.pos.map(x=>x.c),1);
   const by=R.pos.filter(x=>x.c>0).sort((a,b)=>b.c-a.c);
   if(by.length) h+='<h2>Kosten nach Gewerk</h2><div class="card bars">'+by.map(x=>`<div class="r"><span class="n">${esc(x.n||KAT[x.kat])}</span><span class="tr"><i style="width:${(x.c/mx*100).toFixed(1)}%"></i></span><b>${eur(x.c)}</b></div>`).join('')+'</div>';
-  h+='<h2>Kostenarten</h2><div class="card">'+KAT_KEYS.filter(k=>R.K[k]>0).map(k=>kv(KAT[k],eur(R.K[k]))).join('')+'</div>';
+  const items=KAT_KEYS.filter(k=>R.K[k]>0).map(k=>({n:KAT[k],v:R.K[k]}));
+  h+='<h2>Kostenarten</h2><div class="card"><div class="viz">'+donut(items,eur(R.total),'Gesamtkosten')+'</div><div class="vleg">'+items.map((x,i)=>`<div class="r"><i style="background:var(--c${(i%8)+1})"></i><span>${esc(x.n)}</span><b>${eur(x.v)}</b><span class="p">${nf(x.v/R.total*100,0)} %</span></div>`).join('')+'</div></div>';
   h+='<h2>Notizen</h2><div class="card pad"><textarea class="code" data-k="notiz" aria-label="Notizen">'+esc(p.notiz)+'</textarea></div>';
   h+='<div class="row-actions"><button class="btn danger" data-act="delproj" data-id="'+p.id+'">Projekt löschen</button><button class="btn" data-act="dup" data-id="'+p.id+'">Kopieren</button></div>';
   h+='<p class="note">Orientierungsrechnung, keine Steuer- oder Rechtsberatung. Steuerliche Einordnung, Umlage und Förderung hängen vom Einzelfall ab.</p></main>';
