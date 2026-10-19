@@ -116,8 +116,8 @@ h2:first-child{margin-top:2px}
 .bars .r b{font-family:var(--font-mono);font-size:12px;text-align:right}
 .code{width:100%;min-height:110px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--font-mono);font-size:12px;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 16px;font-size:14px;z-index:20;max-width:calc(100vw - 32px)}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
-.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px;border-radius:10px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:500;min-height:50px;text-align:center;line-height:1.15}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px;border-radius:10px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:500;min-height:50px;text-align:center;line-height:1.15}
 .tabbar a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 /*BRAND*/
@@ -147,6 +147,8 @@ details.vtab{margin:6px 14px 10px;font-size:12.5px;color:var(--muted)}
 details.vtab table{width:100%;border-collapse:collapse;margin-top:6px}
 details.vtab td,details.vtab th{padding:4px 2px;border-top:1px solid var(--line);text-align:right;font-family:var(--font-mono);font-size:12px}
 details.vtab td:first-child,details.vtab th:first-child{text-align:left;font-family:var(--font-body)}
+.vrow{display:grid;align-items:center;padding:7px 14px;font-size:13.5px}.vrow b{font-family:var(--font-mono);font-weight:600;font-size:13px}
+.rch{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 2px;font-size:12px;color:var(--muted)}.rch button{min-height:32px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface2);color:var(--ink);font:inherit;font-size:12.5px}.rch button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
 /*ENDVIZ*/
 </style>
 </head>
@@ -256,11 +258,11 @@ let uidN=0; const uid=()=>Date.now().toString(36)+(uidN++).toString(36);
 function newProj(x){
   const p=Object.assign({id:db.nextId++,name:'Neues Projekt',adresse:'',qm:60,bj:1985,kp:0,nkPct:10.6,gebAnt:80,mSeit:6,vorher:0,brutto:true,puffer:10,we:1,afa:2,grenz:42,zins0:3,
     sh:{heiz:false,sanit:false,elek:false,fenster:false},wahl:'sofort',verteil:5,foerdAn:true,foerdRate:15,isfp:false,
-    miete0:0,mieteZiel:0,modus:'bestand',v559:false,leerM:2,nkLeer:150,ek:0,zins:3.8,tilg:2,pos:[],notiz:''},x||{});
+    miete0:0,mieteZiel:0,modus:'bestand',rooms:[],rates:Object.assign({},DEFRATES),v559:false,leerM:2,nkLeer:150,ek:0,zins:3.8,tilg:2,pos:[],notiz:''},x||{});
   db.projs.push(p); return p;
 }
-const getP=id=>db.projs.find(p=>p.id===id);
-function newPos(p,n,k){ const x={id:uid(),n:n||'',kat:k||'erh',a:[0,0,0],sel:0,eigen:0,inst:0}; p.pos.push(x); return x; }
+const getP=id=>{ const p=db.projs.find(p=>p.id===id); if(p){ if(!Array.isArray(p.rooms)) p.rooms=[]; p.rates=Object.assign({},DEFRATES,p.rates||{}); } return p; };
+function newPos(p,n,k){ const x={id:uid(),n:n||'',kat:k||'erh',a:[0,0,0],sel:0,eigen:0,inst:0,rooms:[]}; p.pos.push(x); return x; }
 
 /* =====================  HILFEN  ===================== */
 const $=q=>document.querySelector(q);
@@ -286,7 +288,7 @@ function nav(h){ if(location.hash===h) render(); else location.hash=h; }
 window.addEventListener('hashchange',()=>{ route=parseHash(); render(); window.scrollTo(0,0); });
 
 function bar(title,sub,back,extra){ return `<div class="bar">${back?`<a class="back" href="${back}">‹ Zurück</a>`:''}<h1>${sub?`<span class="sub">${esc(sub)}</span>`:''}${esc(title)}</h1>${extra||''}</div>`; }
-function tabs(p,cur){ const t=[['kosten','Kosten'],['steuer','Steuer'],['miete','Miete'],['fin','Finanzierung'],['erg','Ergebnis']]; return `<nav class="tabbar" aria-label="Bereiche">${t.map(([i,l])=>`<a href="#/p/${p.id}/${i}" ${cur===i?'aria-current="page"':''}>${l}</a>`).join('')}</nav>`; }
+function tabs(p,cur){ const t=[['schaetz','Schätzung'],['kosten','Kosten'],['steuer','Steuer'],['miete','Miete'],['fin','Finanzen'],['erg','Ergebnis']]; return `<nav class="tabbar" aria-label="Bereiche">${t.map(([i,l])=>`<a href="#/p/${p.id}/${i}" ${cur===i?'aria-current="page"':''}>${l}</a>`).join('')}</nav>`; }
 
 function viewList(){
   let h=bar('Renovierung','Sanierung',null,`<a class="btn small" href="#/einstellungen">Einstellungen</a>`)+'<main>';
@@ -294,18 +296,88 @@ function viewList(){
   else { h+='<div class="row-actions" style="margin-top:0"><button class="btn primary" data-act="new">Projekt anlegen</button></div><div class="cards">'+db.projs.map(p=>{ const R=calc(p); return `<a class="pcard" href="#/p/${p.id}/kosten"><div class="t">${esc(p.name||'Ohne Namen')}</div><div class="a">${esc(p.adresse||'')}${p.qm?' · '+nf(p.qm,0)+' m²':''}</div><div class="m"><span>Kosten <b>${eur(R.total)}</b></span><span>je m² <b>${R.qm>0?eur(R.total/R.qm):'–'}</b></span><span>Positionen <b>${p.pos.length}</b></span></div></a>`; }).join('')+'</div>'; }
   return h+'<p class="note">Orientierungsrechnung, keine Steuer- oder Rechtsberatung. Prüfe Steuerfragen mit deinem Steuerberater.</p></main>';
 }
-function posCard(x){
+function posCard(x,p){
   const c=num(x.a[x.sel])*(1-Math.min(100,num(x.eigen))/100);
   return `<div class="pos" data-pid="${x.id}"><div class="l1"><input type="text" data-pf="n" value="${esc(x.n)}" placeholder="Gewerk, zum Beispiel Bad" aria-label="Gewerk"><button class="del" data-act="delpos" data-id="${x.id}" aria-label="Position löschen">×</button></div>
   <select data-pf="kat" data-s="1" aria-label="Art der Maßnahme">${KAT_KEYS.map(k=>`<option value="${k}" ${x.kat===k?'selected':''}>${KAT[k]}</option>`).join('')}</select>
+  ${p&&p.rooms&&p.rooms.length?`<div class="rch" role="group" aria-label="Räume zu ${esc(x.n||'Gewerk')}"><span>Räume:</span>${p.rooms.map(r=>`<button type="button" data-act="toggleroom" data-pid="${x.id}" data-rid="${r.id}" aria-pressed="${(x.rooms||[]).includes(r.id)}">${esc(r.n||ARTS[r.art].n)}</button>`).join('')}</div>`:''}
   <div class="ang">${[0,1,2].map(i=>`<label class="${x.sel===i?'on':''}"><span class="r"><input type="radio" name="sel-${x.id}" data-pf="sel" value="${i}" ${x.sel===i?'checked':''} aria-label="Angebot ${'ABC'[i]} wählen">Angebot ${'ABC'[i]}</span><input type="text" inputmode="decimal" data-pf="a${i}" value="${x.a[i]?esc(String(x.a[i]).replace('.',',')):''}" placeholder="€" aria-label="Preis Angebot ${'ABC'[i]}"></label>`).join('')}</div>
   <div class="l3"><label>Eigenleistung %<input type="text" inputmode="decimal" data-pf="eigen" value="${x.eigen?esc(String(x.eigen).replace('.',',')):''}" placeholder="0"></label><label>Instandh.-Anteil %<input type="text" inputmode="decimal" data-pf="inst" value="${x.inst?esc(String(x.inst).replace('.',',')):''}" placeholder="0"></label><div class="cost" id="pc-${x.id}">${eur(c)}</div></div></div>`;
+}
+
+/* ---------- Schätzung nach Räumen ---------- */
+const ARTS={bad:{n:'Bad, WC',r:400,f:100},kueche:{n:'Küche',r:250,f:100},wohn:{n:'Wohnzimmer',r:150,f:100},schlaf:{n:'Schlafzimmer',r:120,f:100},kind:{n:'Kinder- oder Arbeitszimmer',r:120,f:100},flur:{n:'Flur, Diele',r:200,f:100},abst:{n:'Abstellraum, HWR',r:100,f:100},balk:{n:'Balkon, Terrasse',r:150,f:25}};
+const DEFRATES=Object.fromEntries(Object.entries(ARTS).map(([k,v])=>[k,v.r]));
+const FAKT=[[100,'100 %, voll'],[50,'50 %, Dachschräge 1 bis 2 m, Wintergarten'],[25,'25 %, Balkon, Terrasse'],[0,'0 %, unter 1 m Höhe']];
+function estCalc(p){
+  const rooms=(p.rooms||[]).map(r=>{ const rate=num((p.rates||{})[r.art]), anr=num(r.fl)*num(r.faktor)/100; return Object.assign({},r,{anr,rate,cost:anr*rate+num(r.fest),off:0,cnt:0}); });
+  const byId={}; rooms.forEach(r=>byId[r.id]=r);
+  const R=calc(p); let assigned=0, unassigned=0, unN=0;
+  p.pos.forEach(x=>{
+    const rp=R.pos.find(z=>z.id===x.id), c=rp?rp.c:0; if(!(c>0)) return;
+    const rs=(x.rooms||[]).map(id=>byId[id]).filter(Boolean);
+    if(!rs.length){ unassigned+=c; unN++; return; }
+    const wsum=rs.reduce((a,r)=>a+r.anr,0);
+    rs.forEach(r=>{ r.off+=c*(wsum>0?r.anr/wsum:1/rs.length); r.cnt++; });
+    assigned+=c;
+  });
+  const sum=rooms.reduce((a,r)=>a+r.cost,0), wfl=rooms.reduce((a,r)=>a+r.anr,0), off=R.total-R.puffer;
+  // Vergleich: nur zugeordnete Angebote, sobald es welche gibt
+  const useAssigned=assigned>0, cmpOff=useAssigned?assigned:off;
+  const cmpSum=useAssigned?rooms.filter(r=>r.cnt>0).reduce((a,r)=>a+r.cost,0):sum;
+  return {rooms,sum,wfl,off,assigned,unassigned,unN,useAssigned,cmpOff,cmpSum,dev:cmpOff-cmpSum,devPct:cmpSum>0?(cmpOff-cmpSum)/cmpSum:null,avg:wfl>0?sum/wfl:0};
+}
+function roomCard(r){
+  return `<div class="pos" data-rid="${r.id}"><div class="l1"><input type="text" data-rf="n" value="${esc(r.n)}" placeholder="Raum" aria-label="Raumname"><button class="del" data-act="delroom" data-id="${r.id}" aria-label="Raum löschen">×</button></div>
+  <select data-rf="art" data-s="1" aria-label="Raumart">${Object.entries(ARTS).map(([k,v])=>`<option value="${k}" ${r.art===k?'selected':''}>${v.n}</option>`).join('')}</select>
+  <div class="l3"><label>Fläche m²<input type="text" inputmode="decimal" data-rf="fl" value="${r.fl?esc(String(r.fl).replace('.',',')):''}" placeholder="0"></label><label>Festbetrag €<input type="text" inputmode="decimal" data-rf="fest" value="${r.fest?esc(String(r.fest).replace('.',',')):''}" placeholder="0"></label><div class="cost" id="rc-${r.id}"></div></div>
+  <select data-rf="faktor" data-s="1" aria-label="Anrechnung der Fläche" style="margin-top:6px">${FAKT.map(([v,t])=>`<option value="${v}" ${+r.faktor===v?'selected':''}>${t}</option>`).join('')}</select>
+  <div class="note" style="margin:6px 0 0" id="rn-${r.id}"></div></div>`;
+}
+function devPill(pct){ if(pct===null) return ''; const a=Math.abs(pct); return a<=0.15?`<span class="pill p-good">✓ ${pct>=0?'+':'−'}${nf(a*100,0)} %</span>`:`<span class="pill p-mid">${pct>0?'▲':'▼'} ${pct>0?'+':'−'}${nf(a*100,0)} %</span>`; }
+function estChart(E){
+  if(!E.rooms.length) return '';
+  const mx=Math.max(1,...E.rooms.map(r=>Math.max(r.cost,r.off)));
+  const hasOff=E.rooms.some(r=>r.off>0);
+  const bar=(v,c,h)=>`<span style="display:block;background:var(--surface2);border-radius:4px;height:${h}px;margin:2px 0"><span style="display:block;height:${h}px;border-radius:4px;background:${c};width:${Math.max(v>0?1:0,v/mx*100).toFixed(1)}%"></span></span>`;
+  const rows=E.rooms.map(r=>{ const pc=r.off>0&&r.cost>0?(r.off-r.cost)/r.cost:null;
+    return `<div class="vrow" role="listitem" style="grid-template-columns:minmax(0,84px) minmax(0,1fr) 84px;gap:8px;align-items:center"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.n||ARTS[r.art].n)}</span><span>${bar(r.cost,'var(--c1)',10)}${hasOff?bar(r.off,'var(--c2)',10):''}</span><span style="text-align:right;line-height:1.25"><b>${eur(r.cost)}</b>${hasOff?`<br><b style="color:var(--muted);font-weight:500">${r.off>0?eur(r.off):'–'}</b>`:''}${pc!==null?`<br>${devPill(pc)}`:''}</span></div>`; }).join('');
+  const leg=`<div class="vl" style="display:flex;gap:14px;padding:8px 14px 0;font-size:12px;color:var(--muted)"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c1);margin-right:5px"></i>Schätzung</span>${hasOff?'<span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c2);margin-right:5px"></i>Angebote, zugeordnet</span>':''}</div>`;
+  return `<h2>Kosten je Raum</h2><div class="card">${leg}<div class="viz" role="list" aria-label="Geschätzte Kosten und zugeordnete Angebote je Raum" style="padding:4px 0 2px">${rows}</div></div>${hasOff?'':'<p class="note">Ordne im Reiter Kosten jedem Gewerk die Räume zu. Dann siehst du hier die Angebote je Raum.</p>'}`;
+}
+function estCompare(E){
+  if(E.sum<=0) return '';
+  const mx=Math.max(E.cmpSum,E.cmpOff)||1, bar=(l,v,c)=>`<div class="vrow" style="grid-template-columns:minmax(0,92px) minmax(0,1fr) auto;gap:8px"><span>${l}</span><span style="background:var(--surface2);border-radius:4px;height:18px;display:block"><span style="display:block;height:18px;border-radius:4px;background:${c};width:${Math.max(1,v/mx*100).toFixed(1)}%"></span></span><b>${eur(v)}</b></div>`;
+  const pill=E.cmpOff>0&&E.devPct!==null?(Math.abs(E.devPct)<=0.15?`<span class="pill p-good">✓ im Rahmen (±15 %)</span>`:E.devPct>0?`<span class="pill p-mid">▲ Angebote ${nf(E.devPct*100,0)} % höher</span>`:`<span class="pill p-mid">▼ Angebote ${nf(-E.devPct*100,0)} % niedriger</span>`):'';
+  const note=E.useAssigned?`Verglichen werden die Räume mit zugeordneten Gewerken.${E.unN?` ${E.unN} Position${E.unN===1?'':'en'} ohne Raum (${eur(E.unassigned)}) ${E.unN===1?'bleibt':'bleiben'} außen vor, zum Beispiel Dach, Fassade oder Heizung.`:''}`:'Noch kein Gewerk einem Raum zugeordnet. Verglichen wird die Summe aller Angebote.';
+  return `<h2>Schätzung gegen Angebote</h2><div class="card"><div class="viz" style="padding:6px 0 2px">${bar('Schätzung',E.cmpSum,'var(--c1)')}${E.cmpOff>0?bar('Angebote',E.cmpOff,'var(--c2)'):''}</div>
+  <div class="kv"><div>Abweichung<small>Angebote minus Schätzung, ohne Puffer</small></div><b>${E.cmpOff>0?(E.dev>=0?'+':'')+eur(E.dev):'–'}</b></div>${pill?`<div style="padding:0 14px 8px">${pill}</div>`:'<div class="kv"><div>Noch keine Angebote<small>Trage im Reiter Kosten Preise ein.</small></div></div>'}<p class="note" style="margin:0;padding:0 14px 12px">${note}</p></div>`;
+}
+function viewSchaetz(p){
+  const E=estCalc(p); let h=bar(p.name||'Projekt','Schätzung','#/')+'<main>';
+  h+='<p class="note" style="margin-top:0">Grobe Schätzung vor den Angeboten: anrechenbare Fläche je Raum mal Satz je m², plus optional ein Festbetrag. Sie ersetzt keine Angebote, sie hilft beim Einordnen.</p>';
+  h+='<h2>Sätze je Raumart</h2><div class="card"><div class="fields">'+Object.entries(ARTS).map(([k,v])=>`<label class="fld">${v.n}<span class="unit"><input type="text" inputmode="decimal" data-k="rates.${k}" value="${esc(String((p.rates||{})[k]).replace('.',','))}"><i>€/m²</i></span></label>`).join('')+'</div></div>';
+  h+='<p class="note">Die Sätze sind Platzhalter und gehören an deine Region und den Standard angepasst. Der Satz gilt für alle Arbeiten im Raum zusammen, auch Sanitär, Fliesen und Elektrik.</p>';
+  h+='<h2>Räume</h2><div class="card" id="roomlist">'+(p.rooms.length?p.rooms.map(roomCard).join(''):'<div class="kv"><div>Noch kein Raum<small>Füge unten Räume hinzu, am besten aus deiner Wohnflächenberechnung.</small></div></div>')+'</div>';
+  h+=`<div class="row-actions"><select id="rtpl" aria-label="Raumart wählen" style="min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-size:16px">${Object.entries(ARTS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><button class="btn primary" data-act="addroom">Raum hinzufügen</button></div>`;
+  h+=`<div class="card" style="margin-top:6px">${kv('Anrechenbare Wohnfläche','<span id="eWfl">'+nf(E.wfl,1)+' m²</span>','<span id="eWflN"></span>')}${kv('Durchschnitt je m²','<span id="eAvg">'+eur(E.avg)+'</span>')}${kv('<b>Geschätzte Kosten</b>','<span id="eSum">'+eur(E.sum)+'</span>','ohne Puffer','tot')}</div>`;
+  h+='<div class="row-actions"><button class="btn" data-act="takeqm">Fläche als Wohnfläche des Projekts übernehmen</button></div>';
+  h+='<div id="estChart">'+estChart(E)+'</div><div id="estCmp">'+estCompare(E)+'</div>';
+  h+='<p class="note">Anrechnung nach Wohnflächenverordnung: Räume voll, Dachschrägen von 1 bis 2 m Höhe zur Hälfte, darunter gar nicht, Balkone und Terrassen in der Regel zu einem Viertel, bis zur Hälfte möglich. Keller und Räume außerhalb der Wohnung zählen nicht.</p></main>';
+  return h+tabs(p,'schaetz');
+}
+function estLive(p){
+  const E=estCalc(p), set=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  E.rooms.forEach(r=>{ set('rc-'+r.id,eur(r.cost)); set('rn-'+r.id,nf(r.anr,1)+' m² anrechenbar × '+nf(r.rate,0)+' €/m²'+(num(r.fest)?' + '+eur(num(r.fest)):'')); });
+  set('eWfl',nf(E.wfl,1)+' m²'); set('eAvg',eur(E.avg)); set('eSum',eur(E.sum));
+  set('eWflN',num(p.qm)>0?(Math.abs(E.wfl-num(p.qm))<0.05?'':'Projekt: '+nf(num(p.qm),1)+' m²'):'');
+  const c=document.getElementById('estChart'); if(c) c.innerHTML=estChart(E); const d=document.getElementById('estCmp'); if(d) d.innerHTML=estCompare(E);
 }
 function viewKosten(p){
   const R=calc(p); let h=bar(p.name||'Projekt','Kosten','#/')+'<main>';
   h+='<h2>Projekt</h2><div class="card"><div class="fields">'+f('name','Bezeichnung','',{src:p,txt:true,full:true})+f('adresse','Adresse','',{src:p,txt:true,full:true})+f('qm','Wohnfläche','m²',{src:p})+f('we','Wohneinheiten','',{src:p})+f('puffer','Puffer für Unvorhergesehenes','%',{src:p})+'</div>'+cb('brutto','Preise enthalten 19 % Umsatzsteuer',p)+'</div>';
   h+='<p class="note">Wohnungsvermieter können die Umsatzsteuer nicht abziehen. Trage deshalb die Bruttopreise ein. Die Steuerrechnung nutzt für die 15-%-Grenze die Nettobeträge.</p>';
-  h+='<h2>Gewerke und Angebote</h2><div class="card" id="poslist">'+(p.pos.length?p.pos.map(posCard).join(''):'<div class="kv"><div>Noch keine Position<small>Füge unten ein Gewerk hinzu.</small></div></div>')+'</div>';
+  h+='<h2>Gewerke und Angebote</h2><div class="card" id="poslist">'+(p.pos.length?p.pos.map(x=>posCard(x,p)).join(''):'<div class="kv"><div>Noch keine Position<small>Füge unten ein Gewerk hinzu.</small></div></div>')+'</div>';
   h+=`<div class="row-actions"><select id="tpl" aria-label="Gewerk wählen" style="min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-size:16px">${TEMPL.map(([n,k],i)=>`<option value="${i}">${n}</option>`).join('')}</select><button class="btn primary" data-act="addpos">Hinzufügen</button></div>`;
   h+=`<div class="card" style="margin-top:6px">${kv('Summe der Positionen',eur(R.total-R.puffer),'ohne Puffer')}${kv('Puffer '+nf(num(p.puffer),0)+' %',eur(R.puffer))}${kv('<b>Gesamtkosten</b>','<span id="sumTot">'+eur(R.total)+'</span>',R.qm>0?'<span id="sumM2">'+eur(R.total/R.qm)+' je m²</span>':'','tot')}</div>`;
   h+='<p class="note">Wähle je Gewerk mit dem Punkt das Angebot, mit dem du rechnest. Eigenleistung ist der Anteil, den du selbst erbringst und nicht bezahlst. Der Instandhaltungsanteil ist der Teil einer Modernisierung, der ohnehin als Reparatur nötig gewesen wäre. Er zählt für die Mieterhöhung nicht mit.</p></main>';
@@ -379,28 +451,35 @@ function viewErg(p){
   if(by.length) h+='<h2>Kosten nach Gewerk</h2><div class="card bars">'+by.map(x=>`<div class="r"><span class="n">${esc(x.n||KAT[x.kat])}</span><span class="tr"><i style="width:${(x.c/mx*100).toFixed(1)}%"></i></span><b>${eur(x.c)}</b></div>`).join('')+'</div>';
   const items=KAT_KEYS.filter(k=>R.K[k]>0).map(k=>({n:KAT[k],v:R.K[k]}));
   h+='<h2>Kostenarten</h2><div class="card"><div class="viz">'+donut(items,eur(R.total),'Gesamtkosten')+'</div><div class="vleg">'+items.map((x,i)=>`<div class="r"><i style="background:var(--c${(i%8)+1})"></i><span>${esc(x.n)}</span><b>${eur(x.v)}</b><span class="p">${nf(x.v/R.total*100,0)} %</span></div>`).join('')+'</div></div>';
+  h+=`<h2>An das Bestands-Cockpit übergeben</h2><div class="card pad"><p style="margin:0 0 10px">Kosten nach Förderung <b>${eur(R.nettoNach)}</b> und Mehrmiete <b>${eur(R.dMiete/12)}</b> pro Monat gehen als Renovierungskosten an ein Objekt im Cockpit.</p><div class="row-actions" style="margin:0"><button class="btn primary" data-act="tocp" data-id="${p.id}">Im Cockpit öffnen</button><button class="btn" data-act="cpcode" data-id="${p.id}">Übergabecode kopieren</button></div><textarea class="code" id="cpBox" readonly hidden aria-label="Übergabecode" style="margin-top:10px"></textarea></div>
+  <p class="note">Läuft das Cockpit als eigenes Home-Bildschirm-Symbol, hat es einen eigenen Speicher. Kopiere dann den Code und füge ihn im Cockpit unter Objekte ein.</p>`;
   h+='<h2>Notizen</h2><div class="card pad"><textarea class="code" data-k="notiz" aria-label="Notizen">'+esc(p.notiz)+'</textarea></div>';
   h+='<div class="row-actions"><button class="btn danger" data-act="delproj" data-id="'+p.id+'">Projekt löschen</button><button class="btn" data-act="dup" data-id="'+p.id+'">Kopieren</button></div>';
   h+='<p class="note">Orientierungsrechnung, keine Steuer- oder Rechtsberatung. Steuerliche Einordnung, Umlage und Förderung hängen vom Einzelfall ab.</p></main>';
   return h+tabs(p,'erg');
 }
+const CPURL_DEF='../bestands-cockpit/';
+const b64=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+function cpPayload(p){ const R=calc(p); return {src:'renovierung',v:1,name:p.name||'',qm:num(p.qm),kosten:Math.round(R.nettoNach),mehrMiete:Math.round(Math.max(0,R.dMiete)/12)}; }
 function viewSet(){
   let h=bar('Einstellungen','Renovierung','#/')+'<main><h2>Daten</h2><div class="card pad"><p style="margin:0 0 10px">Die Daten liegen nur auf diesem Gerät. Sichere sie als Text.</p><div class="row-actions" style="margin:0"><button class="btn" data-act="exp">Backup anzeigen</button><button class="btn danger" data-act="wipe">Alles löschen</button></div><textarea class="code" id="bk" placeholder="Backup-Text" style="margin-top:10px"></textarea><div class="row-actions"><button class="btn" data-act="cpy">Kopieren</button><button class="btn primary" data-act="imp">Einlesen</button></div></div>';
+  h+=`<h2>Adresse des Cockpits</h2><div class="card pad"><input type="text" id="cpu" class="code" style="min-height:42px" value="${esc(db.cpUrl||CPURL_DEF)}" aria-label="Adresse des Cockpits"><p class="note" style="margin:8px 0 0">Wohin der Knopf „Im Cockpit öffnen“ führt, relativ zu dieser App oder als volle Adresse.</p></div>`;
   h+=`<h2>Aus der Besichtigung übernehmen</h2><div class="card pad"><p style="margin:0 0 10px">Füge den Übergabecode aus der Besichtigungs-App ein.</p><textarea class="code" id="xf" placeholder="BESICHTIGUNG:..."></textarea><div class="row-actions"><button class="btn primary" data-act="xfer">Projekt anlegen</button></div></div>`;
   if(!storageOk) h+='<div class="warn" style="margin-top:10px">Speichern im Browser ist nicht möglich.</div>';
   return h+'</main>';
 }
 function render(keep){
   const y=keep?window.scrollY:0, r=route=parseHash(); let h;
-  if(r.v==='proj'){ const p=getP(r.id); if(!p){ location.hash='#/'; return; } h={kosten:viewKosten,steuer:viewSteuer,miete:viewMiete,fin:viewFin,erg:viewErg}[r.tab]||viewKosten; h=h(p); }
+  if(r.v==='proj'){ const p=getP(r.id); if(!p){ location.hash='#/'; return; } h={schaetz:viewSchaetz,kosten:viewKosten,steuer:viewSteuer,miete:viewMiete,fin:viewFin,erg:viewErg}[r.tab]||viewKosten; h=h(p); }
   else h=r.v==='set'?viewSet():viewList();
-  $('#app').innerHTML=h; window.scrollTo(0,y);
+  $('#app').innerHTML=h; if(r.v==='proj'&&r.tab==='schaetz'){ const q=getP(r.id); if(q) estLive(q); } window.scrollTo(0,y);
 }
 function live(){
   const r=route; if(r.v!=='proj') return; const p=getP(r.id); if(!p) return; const R=calc(p), set=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
   set('sumTot',eur(R.total)); set('sumM2',R.qm>0?eur(R.total/R.qm)+' je m²':''); set('d-ak',eur(R.AK)); set('d-lim',eur(R.limit));
   set('d-cap',eur(p.isfp?R.capIsfp:R.capStd)); set('d-fb',eur(R.foerd)); set('d-bau',eur(R.bauKosten+R.bauZins)); set('d-dl',eur(R.darl)); set('d-rate',eur(R.am.rate)); set('d-int',eur(R.am.int1));
   R.pos.forEach(x=>set('pc-'+x.id,eur(x.c)));
+  if(r.tab==='schaetz') estLive(p);
 }
 function setPath(o,path,v){ const a=path.split('.'); let t=o; for(let i=0;i<a.length-1;i++) t=t[a[i]]; t[a[a.length-1]]=v; }
 
@@ -410,7 +489,16 @@ document.addEventListener('click',e=>{
   if(a==='new'){ const x=newProj({}); save(); nav('#/p/'+x.id+'/kosten'); return; }
   if(a==='sample'){ const x=newProj({name:'Beispiel: Wohnung Altbau',adresse:'Musterstraße 1',qm:62,bj:1968,kp:180000,mSeit:4,miete0:520,mieteZiel:10.5,we:1,ek:15000,leerM:3,wahl:'verteilt'});
     [['Bad komplett','mod',[11500,9800,0],1],['Elektrik erneuern','mod',[8200,7600,0],1],['Fenster','energ',[9400,8900,0],1],['Böden','erh',[4800,0,0],0],['Malerarbeiten','schoen',[3200,2700,0],1],['Küche','kueche',[6500,0,0],0]].forEach(([n,k,a2,s])=>{ const q=newPos(x,n,k); q.a=a2; q.sel=s; });
+    [['Bad','bad',8,100],['Küche','kueche',10,100],['Wohnzimmer','wohn',22,100],['Schlafzimmer','schlaf',15,100],['Flur','flur',6,100],['Balkon','balk',4,25]].forEach(([n,k,fl,fa])=>x.rooms.push({id:uid(),n,art:k,fl,faktor:fa,fest:0}));
+    { const rid=n=>(x.rooms.find(r=>r.n===n)||{}).id, asg={'Bad komplett':['Bad'],'Böden':['Wohnzimmer','Schlafzimmer','Flur'],'Malerarbeiten':['Wohnzimmer','Schlafzimmer','Flur','Küche'],'Küche':['Küche']}; x.pos.forEach(q=>{ if(asg[q.n]) q.rooms=asg[q.n].map(rid).filter(Boolean); }); }
+    Object.assign(x.rates,{bad:1150,kueche:400,wohn:420,schlaf:380,kind:380,flur:350,abst:200,balk:150});
     x.sh.elek=true; x.sh.sanit=true; save(); nav('#/p/'+x.id+'/erg'); return; }
+  if(a==='tocp'&&p){ flush(); location.href=(db.cpUrl||CPURL_DEF).replace(/#.*$/,'')+'#import='+encodeURIComponent('RENOVIERUNG:'+b64(cpPayload(p))); return; }
+  if(a==='cpcode'&&p){ const code='RENOVIERUNG:'+b64(cpPayload(p)), box=$('#cpBox'); box.hidden=false; box.value=code; const fb=()=>{ box.focus(); box.select(); toast('Code markiert. Kopiere ihn mit dem Menü deines Geräts.'); }; try{ navigator.clipboard.writeText(code).then(()=>toast('Übergabecode kopiert.'),fb); }catch(err){ fb(); } return; }
+  if(a==='toggleroom'&&p){ const x=p.pos.find(z=>z.id===b.dataset.pid); if(x){ x.rooms=x.rooms||[]; const i=x.rooms.indexOf(b.dataset.rid); if(i>=0) x.rooms.splice(i,1); else x.rooms.push(b.dataset.rid); save(); render(true); } return; }
+  if(a==='addroom'&&p){ const k=$('#rtpl').value; p.rooms.push({id:uid(),n:ARTS[k].n,art:k,fl:0,faktor:ARTS[k].f,fest:0}); save(); render(true); return; }
+  if(a==='delroom'&&p){ if(!twice('dr'+b.dataset.id)) return; p.rooms=p.rooms.filter(x=>x.id!==b.dataset.id); p.pos.forEach(z=>{ if(z.rooms) z.rooms=z.rooms.filter(i=>i!==b.dataset.id); }); save(); render(true); return; }
+  if(a==='takeqm'&&p){ const E=estCalc(p); if(E.wfl>0){ p.qm=Math.round(E.wfl*100)/100; save(); render(true); toast('Wohnfläche übernommen.'); } return; }
   if(a==='addpos'&&p){ const t=TEMPL[+$('#tpl').value]; newPos(p,t[0],t[1]); save(); render(true); return; }
   if(a==='delpos'&&p){ if(!twice('dp'+b.dataset.id)) return; p.pos=p.pos.filter(x=>x.id!==b.dataset.id); save(); render(true); return; }
   if(a==='delproj'){ if(!twice('pj'+b.dataset.id)) return; db.projs=db.projs.filter(x=>x.id!==+b.dataset.id); save(); nav('#/'); return; }
@@ -428,17 +516,20 @@ function applyField(el){
   if(el.dataset.pf){ const row=el.closest('[data-pid]'), x=p.pos.find(z=>z.id===row.dataset.pid); if(!x) return false; const k=el.dataset.pf;
     if(k==='n') x.n=el.value; else if(k==='kat') x.kat=el.value; else if(k==='sel'){ x.sel=+el.value; row.querySelectorAll('.ang label').forEach((l,i)=>l.classList.toggle('on',i===x.sel)); }
     else if(k==='eigen'||k==='inst') x[k]=parseDE(el.value); else if(/^a[012]$/.test(k)) x.a[+k[1]]=parseDE(el.value); return true; }
+  if(el.dataset.rf){ const row=el.closest('[data-rid]'), x=p.rooms.find(z=>z.id===row.dataset.rid); if(!x) return false; const k=el.dataset.rf;
+    if(k==='n') x.n=el.value; else if(k==='art'){ x.art=el.value; x.faktor=ARTS[x.art].f; } else if(k==='faktor') x.faktor=+el.value; else x[k]=parseDE(el.value); return true; }
   if(el.dataset.k){ const k=el.dataset.k; let v;
     if(el.type==='checkbox') v=el.checked; else if(el.tagName==='SELECT') v=el.value; else if(['name','adresse','notiz'].includes(k)) v=el.value; else v=parseDE(el.value);
     setPath(p,k,v); return true; }
   return false;
 }
-document.addEventListener('input',e=>{ const t=e.target; if(t.type==='checkbox'||t.type==='radio'||t.tagName==='SELECT') return; if(applyField(t)){ save(); live(); } });
-document.addEventListener('change',e=>{ const t=e.target; if(!(t.dataset&&(t.dataset.k||t.dataset.pf))) return; if(t.type==='text'&&t.tagName!=='SELECT') return;
+document.addEventListener('input',e=>{ if(e.target.id==='cpu'){ db.cpUrl=e.target.value.trim(); save(); return; } const t=e.target; if(t.type==='checkbox'||t.type==='radio'||t.tagName==='SELECT') return; if(applyField(t)){ save(); live(); } });
+document.addEventListener('change',e=>{ const t=e.target; if(!(t.dataset&&(t.dataset.k||t.dataset.pf||t.dataset.rf))) return; if(t.type==='text'&&t.tagName!=='SELECT') return;
   if(applyField(t)){ save(); if(t.tagName==='SELECT'||t.dataset.pf==='sel'||t.type==='checkbox'){ render(true); } else live(); } });
 render();
 </script>
-<footer class="legal-foot"><button type="button" id="legalBtn">Haftung &amp; Datenschutz</button></footer>
+<footer class="legal-foot"><a id="hubLink" href="../immobilien-hub/">‹ Zum Hub</a> <button type="button" id="legalBtn">Haftung &amp; Datenschutz</button></footer>
+<script>(function(){try{var u=localStorage.getItem('immo-hub-url-v1');if(u)document.getElementById('hubLink').href=u;}catch(e){}})();</script>
 <dialog id="legalDlg"><form method="dialog"><h2>Haftung &amp; Datenschutz</h2>
 <p id="legalWho" hidden></p>
 <h3>Haftung</h3><p>Diese App liefert Orientierungsrechnungen. Sie ersetzt keine Steuer-, Rechts-, Finanzierungs- oder Anlageberatung. Ergebnisse, Fristen und Rechtshinweise können unvollständig oder nicht mehr aktuell sein und hängen von deinen Eingaben und vom Einzelfall ab. Für Richtigkeit und Vollständigkeit wird keine Gewähr übernommen. Prüfe wichtige Entscheidungen mit Steuerberater, Rechtsanwalt oder Bank.</p>
@@ -449,6 +540,7 @@ render();
 <style>
 .legal-foot{text-align:center;padding:18px 16px calc(100px + env(safe-area-inset-bottom));font:12px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
 .legal-foot button{background:none;border:0;color:inherit;opacity:.6;text-decoration:underline;font:inherit;padding:8px;cursor:pointer}
+.legal-foot a{color:inherit;opacity:.6;text-decoration:underline;font:inherit;padding:8px;display:inline-block}
 #legalDlg{color-scheme:light dark;background:Canvas;color:CanvasText;border:1px solid color-mix(in srgb,CanvasText 25%,transparent);border-radius:14px;padding:18px;max-width:min(460px,calc(100vw - 32px));max-height:80vh;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
 #legalDlg::backdrop{background:rgba(0,0,0,.5)}
 #legalDlg h2{font-size:18px;margin:0 0 8px}#legalDlg h3{font-size:14px;margin:14px 0 4px}#legalDlg p{margin:0 0 8px}
